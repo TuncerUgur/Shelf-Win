@@ -1,0 +1,93 @@
+<Window x:Class="DockShelf.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Dock Ayarları" Height="420" Width="300"
+        WindowStyle="ToolWindow" WindowStartupLocation="CenterOwner"
+        Background="#222222" Foreground="White" ResizeMode="NoResize">
+    
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#EEEEEE"/>
+            <Setter Property="Margin" Value="0,5,0,2"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#333333"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#555555"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="Margin" Value="0,0,0,15"/>
+            <Style.Resources>
+                <VisualBrush x:Key="PlaceholderBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
+                    <VisualBrush.Visual>
+                        <TextBlock Text="{Binding Tag, RelativeSource={RelativeSource AncestorType=TextBox}}" 
+                                 Foreground="#666666" FontStyle="Italic" Margin="2,0,0,0"/>
+                    </VisualBrush.Visual>
+                </VisualBrush>
+            </Style.Resources>
+            <Style.Triggers>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="Text" Value=""/>
+                        <Condition Property="IsKeyboardFocused" Value="False"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="{StaticResource PlaceholderBrush}"/>
+                </MultiTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#444444"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="0,5,0,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="15">
+        <StackPanel>
+            <TextBlock Text="⚙️ Raf Ayarları" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
+
+            <TextBlock Text="📛 Raf Adı (Label)" FontWeight="SemiBold"/>
+            <TextBlock Text="Boş bırakılırsa app bar üzerinde isim gösterilmez." FontSize="10" Foreground="#AAAAAA" TextWrapping="Wrap" Margin="0,0,0,5"/>
+            <TextBox x:Name="NameTextBox" Text="" Tag="Örn: Yapay Zeka, İş Araçları..." />
+            
+            <TextBlock Text="Matris Düzeni (Matrix Layout)" FontWeight="SemiBold"/>
+            <TextBlock Text="0 olarak bırakırsanız klasik otomatik saran görünüme döner." FontSize="10" Foreground="#AAAAAA" TextWrapping="Wrap" Margin="0,0,0,10"/>
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Satır Sayısı (Rows)"/>
+                    <TextBox x:Name="RowsTextBox" Text="0"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Sütun Sayısı (Cols)"/>
+                    <TextBox x:Name="ColumnsTextBox" Text="0"/>
+                </StackPanel>
+            </Grid>
+
+            <TextBlock Text="🖼 Arka Plan Görseli" FontWeight="SemiBold" Margin="0,10,0,5"/>
+            <TextBlock x:Name="BgPathTextBlock" Text="Seçili Görsel Yok" FontSize="11" Foreground="#888888" TextTrimming="CharacterEllipsis" Margin="0,0,0,5"/>
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Content="Görsel Seç..." Click="SelectBgButton_Click"/>
+                <Button Grid.Column="2" Content="Görseli Kaldır" Click="ClearBgButton_Click" Background="#553333"/>
+            </Grid>
+            
+            <Button Content="Kaydet ve Kapat" Background="#2E7D32" FontWeight="Bold" Margin="0,25,0,0" Click="SaveButton_Click"/>
+            
+        </StackPanel>
+    </Grid>
+</Window>
