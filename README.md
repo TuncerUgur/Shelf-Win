@@ -30,7 +30,7 @@
 Bu açık kaynaklı bir projedir. Eğer beğendiyseniz:
 * ⭐ Bu depoya **Star** (Yıldız) verin!
 * 🐛 Bir hata bulursanız **Issue** (Sorun) açın.
-* ☕ Geliştiriciye destek olun: 'Buy Me a Coffee'
+* ☕ Geliştiriciye destek olun: [Buy Me a Coffee](https://buymeacoffee.com/ugurtuncer89)
 ---
 
 ## 🇺🇸 English
@@ -60,7 +60,7 @@ Bu açık kaynaklı bir projedir. Eğer beğendiyseniz:
 This is an open-source project. If you like it:
 * ⭐ **Star** this repository!
 * 🐛 Open an **Issue** if you find bugs.
-* ☕ Support the developer:  'Buy Me a Coffee'
+* ☕ Support the developer:[Buy Me a Coffee](https://buymeacoffee.com/ugurtuncer89)
 
 ---
 
