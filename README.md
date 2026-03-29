@@ -19,6 +19,18 @@
 1. [Releases](https://github.com/TuncerUgur/Shelf-Win/releases) sayfasından en güncel `.zip` dosyasını indirin.
 2. Klasöre çıkartın ve `DockShelf.exe` dosyasını çalıştırın.
 
+
+## 🏗️ Teknik Özellikler
+* **Dil:** C#
+* **Framework:** .NET 8 / WPF
+* **UI Style:** WinUI-inspired, Borderless, Transparent
+* **Storage:** Local JSON settings & Local File System
+
+## 🤝 Destek & Katkıda Bulunma
+Bu açık kaynaklı bir projedir. Eğer beğendiyseniz:
+* ⭐ Bu depoya **Star** (Yıldız) verin!
+* 🐛 Bir hata bulursanız **Issue** (Sorun) açın.
+* ☕ Geliştiriciye destek olun: 'Buy Me a Coffee'
 ---
 
 ## 🇺🇸 English
@@ -48,7 +60,7 @@
 This is an open-source project. If you like it:
 * ⭐ **Star** this repository!
 * 🐛 Open an **Issue** if you find bugs.
-* ☕ Support the developer: [Insert your 'Buy Me a Coffee' or 'Support' link here]
+* ☕ Support the developer:  'Buy Me a Coffee'
 
 ---
 
