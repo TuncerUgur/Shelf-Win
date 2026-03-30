@@ -419,6 +419,7 @@ FodyWeavers.xsd
 # Gereksiz log ve geçici dosyalar
 *.txt
 *.log
+*.md
 bin/
 obj/
 .vs/

@@ -96,14 +96,29 @@ namespace DockShelf
 
                 DockItemsControl.ItemsPanel = new System.Windows.Controls.ItemsPanelTemplate(factory);
                 OrientationButton.Visibility = Visibility.Collapsed; 
-                ControlsWrapPanel.MaxWidth = double.PositiveInfinity;
+                ControlsStackPanel.MaxWidth = double.PositiveInfinity;
             }
             else
             {
                 OrientationButton.Visibility = Visibility.Visible;
                 DockItemsControl.ItemsPanel = _config.IsVertical ? (System.Windows.Controls.ItemsPanelTemplate)FindResource("VerticalPanel") : (System.Windows.Controls.ItemsPanelTemplate)FindResource("HorizontalPanel");
-                OrientationButton.Content = _config.IsVertical ? "↕" : "↔";
-                ControlsWrapPanel.MaxWidth = _config.IsVertical ? 40 : double.PositiveInfinity;
+                
+                if (_config.IsVertical)
+                {
+                    OrientationButton.Content = "☰"; // Hamburger
+                    MenuPanel.Visibility = Visibility.Collapsed; // Initial state: closed
+                    ControlsStackPanel.MaxWidth = 40;
+                    OrientationButton.ToolTip = "Open Menu";
+                    HorizontalModeButton.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    OrientationButton.Content = "↕";
+                    MenuPanel.Visibility = Visibility.Visible;
+                    ControlsStackPanel.MaxWidth = double.PositiveInfinity;
+                    OrientationButton.ToolTip = "Toggle Orientation";
+                    HorizontalModeButton.Visibility = Visibility.Collapsed;
+                }
             }
         }
 
@@ -130,8 +145,19 @@ namespace DockShelf
 
         private void OrientationButton_Click(object sender, RoutedEventArgs e)
         {
-            _config.IsVertical = !_config.IsVertical;
-            ApplySettingsState();
+            // If the inner horizontal button was clicked, or if we're not vertical, toggle orientation
+            if (sender == HorizontalModeButton || !_config.IsVertical)
+            {
+                _config.IsVertical = !_config.IsVertical;
+                ApplySettingsState();
+            }
+            else
+            {
+                // We are in vertical mode and the main hamburger button was clicked: Toggle menu
+                bool isCurrentlyOpen = MenuPanel.Visibility == Visibility.Visible;
+                MenuPanel.Visibility = isCurrentlyOpen ? Visibility.Collapsed : Visibility.Visible;
+                ControlsStackPanel.MaxWidth = isCurrentlyOpen ? 40 : double.PositiveInfinity;
+            }
             _app.SaveConfigs();
         }
 
@@ -455,5 +481,11 @@ namespace DockShelf
             }
             return null;
         }
+        private void AboutButton_Click(object sender, RoutedEventArgs e)
+{
+    AboutWindow aboutWin = new AboutWindow();
+    aboutWin.Owner = this; // Ana pencerenin üzerinde düzgün görünmesi için
+    aboutWin.ShowDialog(); // Kullanıcı pencereyi kapatana kadar ana pencereyi bekletir
+}
     }
 }

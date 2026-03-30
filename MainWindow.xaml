@@ -185,17 +185,21 @@
 
             <Grid>
                 <!-- Top control bar — moved 5px up with negative top margin -->
-                <WrapPanel x:Name="ControlsWrapPanel" Orientation="Horizontal"
-                           HorizontalAlignment="Right" VerticalAlignment="Top"
-                           Margin="5,3,5,0" Panel.ZIndex="10">
-                    <Button x:Name="AddDockButton"    Content="+"  Style="{StaticResource WindowBtnStyle}" ToolTip="New Shelf"          Click="AddDockButton_Click"    FontSize="12" FontWeight="Bold"/>
+                <StackPanel x:Name="ControlsStackPanel" Orientation="Horizontal"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Margin="5,3,5,0" Panel.ZIndex="10">
                     <Button x:Name="OrientationButton" Content="↔" Style="{StaticResource WindowBtnStyle}" ToolTip="Toggle Orientation"  Click="OrientationButton_Click"/>
-                    <Button x:Name="EditModeButton"   Content="⇄"  Style="{StaticResource WindowBtnStyle}" ToolTip="Edit / Reorder Mode" Click="EditModeButton_Click"   FontSize="11"/>
-                    <Button x:Name="LockButton"       Content="🔓" Style="{StaticResource WindowBtnStyle}" ToolTip="Lock Position"       Click="LockButton_Click"       FontSize="11"/>
-                    <Button x:Name="PinButton"        Content="📌" Style="{StaticResource WindowBtnStyle}" ToolTip="Toggle Always on Top" Click="PinButton_Click"/>
-                    <Button x:Name="SettingsButton"   Content="⚙️" Style="{StaticResource WindowBtnStyle}" ToolTip="Settings"            Click="SettingsButton_Click"   FontSize="11"/>
-                    <Button                           Content="✕"  Style="{StaticResource WindowBtnStyle}" ToolTip="Close Shelf"         Click="CloseButton_Click"/>
-                </WrapPanel>
+                    <StackPanel x:Name="MenuPanel" Orientation="Horizontal">
+                       <Button x:Name="AddDockButton"    Content="+"  Style="{StaticResource WindowBtnStyle}" ToolTip="New Shelf"          Click="AddDockButton_Click"    FontSize="12" FontWeight="Bold"/>
+                        <Button x:Name="HorizontalModeButton" Content="↔" Style="{StaticResource WindowBtnStyle}" ToolTip="Switch to Horizontal" Click="OrientationButton_Click"/>
+                        <Button x:Name="EditModeButton"   Content="⇄"  Style="{StaticResource WindowBtnStyle}" ToolTip="Edit / Reorder Mode" Click="EditModeButton_Click"   FontSize="11"/>
+                        <Button x:Name="LockButton"       Content="🔓" Style="{StaticResource WindowBtnStyle}" ToolTip="Lock Position"       Click="LockButton_Click"       FontSize="11"/>
+                        <Button x:Name="PinButton"        Content="📌" Style="{StaticResource WindowBtnStyle}" ToolTip="Toggle Always on Top" Click="PinButton_Click"/>
+                        <Button x:Name="AboutButton" Content="ℹ️" Style="{StaticResource WindowBtnStyle}" ToolTip="About &amp; Support" Click="AboutButton_Click" FontSize="11"/>
+                        <Button x:Name="SettingsButton"   Content="⚙️" Style="{StaticResource WindowBtnStyle}" ToolTip="Settings"            Click="SettingsButton_Click"   FontSize="11"/>
+                        <Button                           Content="✕"  Style="{StaticResource WindowBtnStyle}" ToolTip="Close Shelf"         Click="CloseButton_Click"/>
+                    </StackPanel>
+                </StackPanel>
 
                 <!-- Empty drop zone -->
                 <Grid x:Name="DragZone" Margin="10,30,10,10" MinWidth="160" MinHeight="70"
