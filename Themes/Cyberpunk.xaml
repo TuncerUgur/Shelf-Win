@@ -1,0 +1,36 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Background: Dark Purple/Black -->
+    <SolidColorBrush x:Key="DockBackgroundBrush" Color="#CC0F0014"/>
+    <SolidColorBrush x:Key="DockBorderBrush" Color="#EE00FFCC"/> <!-- Neon Cyan Border -->
+    <CornerRadius x:Key="DockCornerRadius">4</CornerRadius>
+    
+    <Style x:Key="DockBorderStyle" TargetType="Border">
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="20" ShadowDepth="0" Color="#00FFCC" Opacity="1.0"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <Storyboard x:Key="ThemeAnimation" RepeatBehavior="Forever" AutoReverse="True">
+        <ColorAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Color)"
+                        From="#00FFCC" To="#FF0055" Duration="0:0:2" />
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                        From="15" To="30" Duration="0:0:2" />
+    </Storyboard>
+    
+    <!-- Item Styles -->
+    <SolidColorBrush x:Key="ItemNormalBrush" Color="#00000000"/>
+    <SolidColorBrush x:Key="ItemHoverBrush" Color="#66FF0055"/>  <!-- Neon Magenta Hover -->
+    <CornerRadius x:Key="ItemCornerRadius">0</CornerRadius> <!-- Sharp Cyberpunk edges -->
+    <Thickness x:Key="ItemMargin">5</Thickness>
+
+    <!-- Label Specs -->
+    <SolidColorBrush x:Key="LabelForegroundBrush" Color="#FF00FFCC"/> <!-- Cyan labels -->
+    
+    <!-- Window Button Spec -->
+    <SolidColorBrush x:Key="ButtonHoverBackgroundBrush" Color="#44FF0055"/>
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#AA00FFCC"/>
+    <SolidColorBrush x:Key="ButtonHoverForegroundBrush" Color="#EEFFFFFF"/>
+</ResourceDictionary>

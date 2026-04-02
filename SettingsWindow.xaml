@@ -1,7 +1,7 @@
 <Window x:Class="DockShelf.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Dock Ayarları" Height="420" Width="300"
+        Title="Dock Ayarları" Height="800" Width="300"
         WindowStyle="ToolWindow" WindowStartupLocation="CenterOwner"
         Background="#222222" Foreground="White" ResizeMode="NoResize">
     
@@ -86,7 +86,47 @@
                 <Button Grid.Column="2" Content="Görseli Kaldır" Click="ClearBgButton_Click" Background="#553333"/>
             </Grid>
             
-            <Button Content="Kaydet ve Kapat" Background="#2E7D32" FontWeight="Bold" Margin="0,25,0,0" Click="SaveButton_Click"/>
+            <TextBlock Text="📏 İkon Boyutu" FontWeight="SemiBold" Margin="0,10,0,5"/>
+            <DockPanel Margin="0,0,0,10">
+                <TextBlock x:Name="IconSizeValueText" Text="{Binding Value, ElementName=IconSizeSlider, StringFormat={}{0:N0} px}" Width="45" DockPanel.Dock="Right" TextAlignment="Right"/>
+                <Slider x:Name="IconSizeSlider" Minimum="16" Maximum="128" Value="36" TickFrequency="4" IsSnapToTickEnabled="True" />
+            </DockPanel>
+
+            <CheckBox x:Name="ShowItemNamesCheckBox" Content="İkonların altında isimleri göster" Foreground="White" Margin="0,0,0,10"/>
+            
+            <TextBlock Text="🎭 Tema (Skin)" FontWeight="SemiBold" Margin="0,10,0,5"/>
+            <ComboBox x:Name="ThemeComboBox" Margin="0,0,0,10" Padding="4">
+                <ComboBoxItem Content="Modern Glass (Varsayılan)" Tag="ModernGlass"/>
+                <ComboBoxItem Content="macOS Tray (Açık Tema)" Tag="MacStyle"/>
+                <ComboBoxItem Content="Cyberpunk Neon" Tag="Cyberpunk"/>
+                <ComboBoxItem Content="Steampunk (Dişliler)" Tag="Steampunk"/>
+                <ComboBoxItem Content="Zen Minimalist (Siyah &amp; Beyaz)" Tag="ZenMinimalist"/>
+                <ComboBoxItem Content="Synthwave (Günbatımı)" Tag="Synthwave"/>
+                <ComboBoxItem Content="Holographic Morph" Tag="Holographic"/>
+                <ComboBoxItem Content="Deep Woods (Koyu Orman)" Tag="DeepWoods"/>
+                <ComboBoxItem Content="Cosmic Nebula (Uzay Boşluğu)" Tag="CosmicNebula"/>
+                <ComboBoxItem Content="RGB Gamer (Dönen Neon)" Tag="RgbGamer"/>
+            </ComboBox>
+
+            <TextBlock Text="🎨 Arka Plan Rengi" FontWeight="SemiBold" Margin="0,10,0,5"/>
+            <DockPanel Margin="0,0,0,5">
+                <Button Content="Renk Seç..." Width="80" DockPanel.Dock="Right" Click="SelectColorButton_Click" ToolTip="Arka plan rengini detaylı seç"/>
+                <Border x:Name="ColorPreviewBorder" BorderBrush="#555" BorderThickness="1" CornerRadius="4" Margin="0,0,10,0">
+                    <Border.Background>
+                        <SolidColorBrush Color="#A1000000"/>
+                    </Border.Background>
+                </Border>
+            </DockPanel>
+            
+            <TextBlock Text="Saydamlık (Opacity)" FontSize="11" Margin="0,5,0,0"/>
+            <DockPanel Margin="0,0,0,5">
+                <TextBlock x:Name="OpacityValueText" Text="{Binding Value, ElementName=OpacitySlider, StringFormat={}{0:N0}%}" Width="45" DockPanel.Dock="Right" TextAlignment="Right"/>
+                <Slider x:Name="OpacitySlider" Minimum="0" Maximum="100" Value="63" TickFrequency="1" IsSnapToTickEnabled="True" 
+                        ValueChanged="OpacitySlider_ValueChanged"/>
+            </DockPanel>
+            <Button Content="Varsayılan Renge Dön (#A1000000)" Background="#444" FontSize="11" Padding="4" Click="DefaultColorButton_Click"/>
+
+            <Button Content="Kaydet ve Kapat" Background="#2E7D32" FontWeight="Bold" Margin="0,15,0,0" Click="SaveButton_Click"/>
             
         </StackPanel>
     </Grid>

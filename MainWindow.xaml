@@ -9,6 +9,8 @@
         LocationChanged="Window_LocationChanged">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
         <!-- Panel Templates -->
         <ItemsPanelTemplate x:Key="HorizontalPanel">
             <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center"/>
@@ -17,10 +19,13 @@
             <WrapPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"/>
         </ItemsPanelTemplate>
 
-        <!-- Text visibility style: show only when no icon -->
+        <!-- Text visibility style: respect ShowLabels, or always show if no icon -->
         <Style x:Key="TextVisStyle" TargetType="TextBlock">
             <Setter Property="Visibility" Value="Collapsed"/>
             <Style.Triggers>
+                <DataTrigger Binding="{Binding ShowLabels, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
                 <DataTrigger Binding="{Binding IconImage}" Value="{x:Null}">
                     <Setter Property="Visibility" Value="Visible"/>
                 </DataTrigger>
@@ -54,13 +59,14 @@
             </Style.Triggers>
         </Style>
 
-        <!-- NORMAL item template (hover scale) -->
         <DataTemplate x:Key="DockItemTemplate">
-            <Border Width="36" Height="36" Margin="3" Background="#22FFFFFF" CornerRadius="8"
+            <Border MinWidth="{Binding CurrentIconSize, RelativeSource={RelativeSource AncestorType=Window}}" MinHeight="{Binding CurrentIconSize, RelativeSource={RelativeSource AncestorType=Window}}" Margin="{DynamicResource ItemMargin}" Background="{DynamicResource ItemNormalBrush}" CornerRadius="{DynamicResource ItemCornerRadius}"
                     ToolTip="{Binding Name}" Cursor="Hand"
                     MouseLeftButtonDown="DockItem_MouseLeftButtonDown"
                     MouseLeftButtonUp="DockItem_MouseLeftButtonUp"
                     MouseRightButtonUp="DockItem_MouseRightButtonUp"
+                    MouseEnter="DockItem_MouseEnter"
+                    MouseLeave="DockItem_MouseLeave"
                     RenderTransformOrigin="0.5,0.5">
                 <Border.RenderTransform>
                     <ScaleTransform ScaleX="1" ScaleY="1"/>
@@ -69,40 +75,60 @@
                     <Style TargetType="Border">
                         <Style.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#44FFFFFF"/>
+                                <Setter Property="Background" Value="{DynamicResource ItemHoverBrush}"/>
                             </Trigger>
                             <EventTrigger RoutedEvent="MouseEnter">
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1.2" Duration="0:0:0.1"/>
-                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1.2" Duration="0:0:0.1"/>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1.3" Duration="0:0:0.4">
+                                            <DoubleAnimation.EasingFunction>
+                                                <ElasticEase EasingMode="EaseOut" Oscillations="2" Springiness="5"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1.3" Duration="0:0:0.4">
+                                            <DoubleAnimation.EasingFunction>
+                                                <ElasticEase EasingMode="EaseOut" Oscillations="2" Springiness="5"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
                                     </Storyboard>
                                 </BeginStoryboard>
                             </EventTrigger>
                             <EventTrigger RoutedEvent="MouseLeave">
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1.0" Duration="0:0:0.15"/>
-                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1.0" Duration="0:0:0.15"/>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1.0" Duration="0:0:0.3">
+                                            <DoubleAnimation.EasingFunction>
+                                                <ElasticEase EasingMode="EaseOut" Oscillations="1" Springiness="7"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1.0" Duration="0:0:0.3">
+                                            <DoubleAnimation.EasingFunction>
+                                                <ElasticEase EasingMode="EaseOut" Oscillations="1" Springiness="7"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
                                     </Storyboard>
                                 </BeginStoryboard>
                             </EventTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-                <Grid>
-                    <Image Source="{Binding IconImage}" Stretch="Uniform" Margin="4"/>
-                    <TextBlock Text="{Binding Name}" Style="{StaticResource TextVisStyle}"
-                               Foreground="White" FontWeight="Bold" FontSize="10"
-                               TextWrapping="Wrap" TextAlignment="Center"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2"/>
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Image Grid.Row="0" Source="{Binding IconImage}" Stretch="Uniform" Width="{Binding CurrentIconSize, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding CurrentIconSize, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                    <TextBlock Grid.Row="1" Text="{Binding Name}" Style="{StaticResource TextVisStyle}"
+                               Foreground="{DynamicResource LabelForegroundBrush}" FontWeight="Bold" FontSize="10"
+                               TextWrapping="Wrap" TextAlignment="Center" MaxWidth="64" MaxHeight="30" TextTrimming="CharacterEllipsis"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,2,0,0"/>
                 </Grid>
             </Border>
         </DataTemplate>
 
         <!-- EDIT MODE item template (jiggle + drag + delete badge) -->
         <DataTemplate x:Key="DockItemEditTemplate">
-            <Border Width="36" Height="36" Margin="3" Background="#33FFFFFF" CornerRadius="8"
+            <Border MinWidth="{Binding CurrentIconSize, RelativeSource={RelativeSource AncestorType=Window}}" MinHeight="{Binding CurrentIconSize, RelativeSource={RelativeSource AncestorType=Window}}" Margin="{DynamicResource ItemMargin}" Background="{DynamicResource ItemNormalBrush}" CornerRadius="{DynamicResource ItemCornerRadius}"
                     ToolTip="{Binding Name}" Cursor="SizeAll"
                     AllowDrop="True"
                     MouseLeftButtonDown="EditItem_MouseLeftButtonDown"
@@ -130,14 +156,19 @@
                         </BeginStoryboard>
                     </EventTrigger>
                 </Border.Triggers>
-                <Grid>
-                    <Image Source="{Binding IconImage}" Stretch="Uniform" Margin="4"/>
-                    <TextBlock Text="{Binding Name}" Style="{StaticResource TextVisStyle}"
-                               Foreground="White" FontWeight="Bold" FontSize="10"
-                               TextWrapping="Wrap" TextAlignment="Center"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2"/>
-                    <!-- Delete badge (top-right) -->
-                    <Button Content="✕" Style="{StaticResource DeleteBadgeStyle}"
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Image Grid.Row="0" Source="{Binding IconImage}" Stretch="Uniform" Width="{Binding CurrentIconSize, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding CurrentIconSize, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                    <TextBlock Grid.Row="1" Text="{Binding Name}" Style="{StaticResource TextVisStyle}"
+                               Foreground="{DynamicResource LabelForegroundBrush}" FontWeight="Bold" FontSize="10"
+                               TextWrapping="Wrap" TextAlignment="Center" MaxWidth="64" MaxHeight="30" TextTrimming="CharacterEllipsis"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,2,0,0"/>
+
+                    <!-- Delete badge (top-right absolute over image) -->
+                    <Button Grid.Row="0" Content="✕" Style="{StaticResource DeleteBadgeStyle}"
                             HorizontalAlignment="Right" VerticalAlignment="Top"
                             Margin="0,-5,-5,0"
                             Click="DeleteEditItem_Click"/>
@@ -148,7 +179,7 @@
         <!-- Top-bar button style -->
         <Style x:Key="WindowBtnStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#88FFFFFF"/>
+            <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Width" Value="16"/>
             <Setter Property="Height" Value="16"/>
@@ -166,8 +197,8 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Foreground" Value="White"/>
-                    <Setter Property="Background" Value="#44000000"/>
+                    <Setter Property="Foreground" Value="{DynamicResource ButtonHoverForegroundBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -178,31 +209,49 @@
         <Border x:Name="ImageBgBorder" CornerRadius="12" Background="Transparent"/>
 
         <!-- Glass + content layer -->
-        <Border CornerRadius="12" Background="#A1000000" BorderBrush="#33FFFFFF" BorderThickness="1">
+        <Border x:Name="GlassBorder" CornerRadius="{DynamicResource DockCornerRadius}" Background="{DynamicResource DockBackgroundBrush}" BorderBrush="{DynamicResource DockBorderBrush}" BorderThickness="1">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.5"/>
             </Border.Effect>
 
             <Grid>
-                <!-- Top control bar — moved 5px up with negative top margin -->
-                <StackPanel x:Name="ControlsStackPanel" Orientation="Horizontal"
-                            HorizontalAlignment="Right" VerticalAlignment="Top"
-                            Margin="5,3,5,0" Panel.ZIndex="10">
-                    <Button x:Name="OrientationButton" Content="↔" Style="{StaticResource WindowBtnStyle}" ToolTip="Toggle Orientation"  Click="OrientationButton_Click"/>
-                    <StackPanel x:Name="MenuPanel" Orientation="Horizontal">
-                       <Button x:Name="AddDockButton"    Content="+"  Style="{StaticResource WindowBtnStyle}" ToolTip="New Shelf"          Click="AddDockButton_Click"    FontSize="12" FontWeight="Bold"/>
-                        <Button x:Name="HorizontalModeButton" Content="↔" Style="{StaticResource WindowBtnStyle}" ToolTip="Switch to Horizontal" Click="OrientationButton_Click"/>
-                        <Button x:Name="EditModeButton"   Content="⇄"  Style="{StaticResource WindowBtnStyle}" ToolTip="Edit / Reorder Mode" Click="EditModeButton_Click"   FontSize="11"/>
-                        <Button x:Name="LockButton"       Content="🔓" Style="{StaticResource WindowBtnStyle}" ToolTip="Lock Position"       Click="LockButton_Click"       FontSize="11"/>
-                        <Button x:Name="PinButton"        Content="📌" Style="{StaticResource WindowBtnStyle}" ToolTip="Toggle Always on Top" Click="PinButton_Click"/>
-                        <Button x:Name="AboutButton" Content="ℹ️" Style="{StaticResource WindowBtnStyle}" ToolTip="About &amp; Support" Click="AboutButton_Click" FontSize="11"/>
-                        <Button x:Name="SettingsButton"   Content="⚙️" Style="{StaticResource WindowBtnStyle}" ToolTip="Settings"            Click="SettingsButton_Click"   FontSize="11"/>
-                        <Button                           Content="✕"  Style="{StaticResource WindowBtnStyle}" ToolTip="Close Shelf"         Click="CloseButton_Click"/>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Top bar containing Shelf Name and Controls -->
+                <Grid Grid.Row="0" Margin="5,3,5,0" Panel.ZIndex="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- Shelf Name Label -->
+                    <TextBlock x:Name="ShelfNameTextBlock" Grid.Column="0" Foreground="#AAFFFFFF" FontSize="10" 
+                               FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" 
+                               Margin="5,0,10,0" IsHitTestVisible="False" Opacity="0.8" TextTrimming="CharacterEllipsis"/>
+
+                    <!-- Controls -->
+                    <StackPanel x:Name="ControlsStackPanel" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <!-- Hamburger that only shows in vertical mode -->
+                        <Button x:Name="HamburgerButton" Content="☰" Style="{StaticResource WindowBtnStyle}" ToolTip="Open Menu" Click="HamburgerButton_Click"/>
+                        
+                        <StackPanel x:Name="MenuPanel" Orientation="Horizontal">
+                            <Button x:Name="AddDockButton"    Content="+"  Style="{StaticResource WindowBtnStyle}" ToolTip="New Shelf"          Click="AddDockButton_Click"    FontSize="12" FontWeight="Bold"/>
+                            <Button x:Name="MenuOrientationButton" Content="↕" Style="{StaticResource WindowBtnStyle}" ToolTip="Toggle Orientation" Click="MenuOrientationButton_Click"/>
+                            <Button x:Name="EditModeButton"   Content="⇄"  Style="{StaticResource WindowBtnStyle}" ToolTip="Edit / Reorder Mode" Click="EditModeButton_Click"   FontSize="11"/>
+                            <Button x:Name="LockButton"       Content="🔓" Style="{StaticResource WindowBtnStyle}" ToolTip="Lock Position"       Click="LockButton_Click"       FontSize="11"/>
+                            <Button x:Name="PinButton"        Content="📌" Style="{StaticResource WindowBtnStyle}" ToolTip="Toggle Always on Top" Click="PinButton_Click"/>
+                            <Button x:Name="AboutButton" Content="ℹ️" Style="{StaticResource WindowBtnStyle}" ToolTip="About &amp; Support" Click="AboutButton_Click" FontSize="11"/>
+                            <Button x:Name="SettingsButton"   Content="⚙️" Style="{StaticResource WindowBtnStyle}" ToolTip="Settings"            Click="SettingsButton_Click"   FontSize="11"/>
+                            <Button                           Content="✕"  Style="{StaticResource WindowBtnStyle}" ToolTip="Close Shelf"         Click="CloseButton_Click"/>
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
+                </Grid>
 
                 <!-- Empty drop zone -->
-                <Grid x:Name="DragZone" Margin="10,30,10,10" MinWidth="160" MinHeight="70"
+                <Grid x:Name="DragZone" Grid.Row="1" Margin="10,5,10,10" MinWidth="160" MinHeight="70"
                       HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
                     <Rectangle Stroke="#66FFFFFF" StrokeThickness="1" StrokeDashArray="4,4"
                                RadiusX="8" RadiusY="8" Fill="#11FFFFFF"/>
@@ -214,10 +263,22 @@
                 </Grid>
 
                 <!-- Items -->
-                <ItemsControl x:Name="DockItemsControl"
+                <ItemsControl x:Name="DockItemsControl" Grid.Row="1"
                               ItemTemplate="{StaticResource DockItemTemplate}"
-                              Margin="10,23,10,10"/>
+                              Margin="10,5,10,10"/>
             </Grid>
         </Border>
+
+        <!-- Folder Hover Popup -->
+        <Popup x:Name="FolderPreviewPopup" AllowsTransparency="True" Placement="MousePoint" StaysOpen="False" PopupAnimation="Fade">
+            <Border Background="#D0000000" BorderBrush="#55FFFFFF" BorderThickness="1" CornerRadius="8" Margin="5">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.6"/>
+                </Border.Effect>
+                <ScrollViewer MaxHeight="300" MaxWidth="250" VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="FolderPreviewList" Margin="5"/>
+                </ScrollViewer>
+            </Border>
+        </Popup>
     </Grid>
 </Window>

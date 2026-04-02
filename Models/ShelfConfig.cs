@@ -18,6 +18,10 @@ namespace DockShelf.Models
         public int MatrixRows { get; set; } = 0; // 0 = auto
         public int MatrixColumns { get; set; } = 0; // 0 = auto
         public string BackgroundImagePath { get; set; } = null;
+        public double IconSize { get; set; } = 36;
+        public string BackgroundColor { get; set; } = "#A1000000";
+        public bool ShowItemNames { get; set; } = false;
+        public string ThemeName { get; set; } = "ModernGlass";
 
         public List<DockItem> Items { get; set; } = new List<DockItem>();
     }

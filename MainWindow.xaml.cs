@@ -6,6 +6,10 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Runtime.InteropServices;
+using System.Windows.Threading;
+using System.Windows.Controls;
+using System.Windows.Interop;
 using DockShelf.Models;
 
 namespace DockShelf
@@ -21,6 +25,63 @@ namespace DockShelf
         private System.Windows.Point _dragStart;
         private bool _lockStateBeforeEdit = false; // saves lock before edit mode
 
+        // Interop for Acrylic Blur
+        [DllImport("user32.dll")]
+        internal static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct WindowCompositionAttributeData
+        {
+            public WindowCompositionAttribute Attribute;
+            public IntPtr Data;
+            public int SizeOfData;
+        }
+
+        internal enum WindowCompositionAttribute
+        {
+            WCA_ACCENT_POLICY = 19
+        }
+
+        internal enum AccentState
+        {
+            ACCENT_DISABLED = 0,
+            ACCENT_ENABLE_GRADIENT = 1,
+            ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
+            ACCENT_ENABLE_BLURBEHIND = 3,
+            ACCENT_ENABLE_ACRYLICBLURBEHIND = 4,
+            ACCENT_INVALID_STATE = 5
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct AccentPolicy
+        {
+            public AccentState AccentState;
+            public int AccentFlags;
+            public int GradientColor;
+            public int AnimationId;
+        }
+        private DispatcherTimer _hoverTimer;
+        private DockItem _hoveredFolderItem;
+        private System.Windows.Media.Animation.Storyboard _currentThemeStoryboard;
+
+        public static readonly DependencyProperty CurrentIconSizeProperty =
+            DependencyProperty.Register("CurrentIconSize", typeof(double), typeof(MainWindow), new PropertyMetadata(36.0));
+
+        public double CurrentIconSize
+        {
+            get { return (double)GetValue(CurrentIconSizeProperty); }
+            set { SetValue(CurrentIconSizeProperty, value); }
+        }
+
+        public static readonly DependencyProperty ShowLabelsProperty =
+            DependencyProperty.Register("ShowLabels", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
+
+        public bool ShowLabels
+        {
+            get { return (bool)GetValue(ShowLabelsProperty); }
+            set { SetValue(ShowLabelsProperty, value); }
+        }
+
         public MainWindow(ShelfConfig config)
         {
             InitializeComponent();
@@ -28,6 +89,10 @@ namespace DockShelf
             _app = (App)System.Windows.Application.Current;
             Items = new ObservableCollection<DockItem>();
             DockItemsControl.ItemsSource = Items;
+
+            _hoverTimer = new DispatcherTimer();
+            _hoverTimer.Interval = TimeSpan.FromSeconds(2);
+            _hoverTimer.Tick += HoverTimer_Tick;
 
             // Restore from config, but clamp to screen bounds
             double screenW = SystemParameters.PrimaryScreenWidth;
@@ -66,12 +131,108 @@ namespace DockShelf
             ApplyPinState();
             ApplySettingsState();
             ApplyLockState();
+
+            this.SourceInitialized += MainWindow_SourceInitialized;
+        }
+
+        private void MainWindow_SourceInitialized(object sender, EventArgs e)
+        {
+            // Removed Acrylic Blur because it causes square bounds bleed on rounded windows.
+        }
+
+        private void EnableAcrylicBlur()
+        {
+            var windowHelper = new WindowInteropHelper(this);
+            var accent = new AccentPolicy();
+            // Optional: You can check _config.ThemeName here to only enable if "ModernGlass", 
+            // but we leave it globally enabled since other themes have opaque backgrounds that cover it.
+            accent.AccentState = AccentState.ACCENT_ENABLE_BLURBEHIND; 
+            
+            var accentStructSize = Marshal.SizeOf(accent);
+            var accentPtr = Marshal.AllocHGlobal(accentStructSize);
+            Marshal.StructureToPtr(accent, accentPtr, false);
+
+            var data = new WindowCompositionAttributeData();
+            data.Attribute = WindowCompositionAttribute.WCA_ACCENT_POLICY;
+            data.SizeOfData = accentStructSize;
+            data.Data = accentPtr;
+
+            SetWindowCompositionAttribute(windowHelper.Handle, ref data);
+
+            Marshal.FreeHGlobal(accentPtr);
         }
 
         public void ApplySettingsState()
         {
-            // Apply Background
-            if (!string.IsNullOrEmpty(_config.BackgroundImagePath) && File.Exists(_config.BackgroundImagePath))
+            CurrentIconSize = _config.IconSize > 0 ? _config.IconSize : 36.0;
+            ShowLabels = _config.ShowItemNames;
+
+            // Apply Shelf Name
+            ShelfNameTextBlock.Text = _config.ShelfName;
+            ShelfNameTextBlock.Visibility = string.IsNullOrWhiteSpace(_config.ShelfName) ? Visibility.Collapsed : Visibility.Visible;
+
+            // Apply Theme
+            string themeName = string.IsNullOrEmpty(_config.ThemeName) ? "ModernGlass" : _config.ThemeName;
+            try
+            {
+                if (_currentThemeStoryboard != null)
+                {
+                    _currentThemeStoryboard.Stop(GlassBorder);
+                    _currentThemeStoryboard = null;
+                }
+
+                var dict = new ResourceDictionary { Source = new Uri($"pack://application:,,,/Themes/{themeName}.xaml") };
+                this.Resources.MergedDictionaries.Clear();
+                this.Resources.MergedDictionaries.Add(dict);
+
+                Dispatcher.InvokeAsync(() => 
+                {
+                    try {
+                        if (this.Resources.Contains("ThemeAnimation"))
+                        {
+                            _currentThemeStoryboard = this.TryFindResource("ThemeAnimation") as System.Windows.Media.Animation.Storyboard;
+                            if (_currentThemeStoryboard != null)
+                            {
+                                _currentThemeStoryboard.Begin(GlassBorder, true);
+                            }
+                        }
+                    } catch (Exception ex) { Debug.WriteLine($"Animation Error: {ex.Message}"); }
+                }, DispatcherPriority.Render);
+            }
+            catch (Exception ex) { 
+                Debug.WriteLine($"Theme Load Error: {ex.Message}"); 
+                // Fallback to minimal state if theme file missing/corrupt
+            }
+
+            // Apply Dock Color (Override if user specifically selected a custom color distinct from default glass)
+            bool isCustomColor = !string.IsNullOrEmpty(_config.BackgroundColor) && _config.BackgroundColor != "#A1000000";
+            bool isCustomImage = !string.IsNullOrEmpty(_config.BackgroundImagePath) && File.Exists(_config.BackgroundImagePath);
+
+            // Block custom flat colors or old images from ruining advanced themes
+            if (themeName != "ModernGlass" && themeName != "ZenMinimalist" && themeName != "MacStyle" && themeName != "DeepWoods")
+            {
+                isCustomColor = false; 
+                isCustomImage = false; 
+            }
+
+            try {
+                if (isCustomColor)
+                {
+                    GlassBorder.Background = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(_config.BackgroundColor));
+                }
+                else
+                {
+                    var themeBrush = this.TryFindResource("DockBackgroundBrush") as System.Windows.Media.Brush;
+                    if (themeBrush != null) GlassBorder.Background = themeBrush;
+                    else GlassBorder.SetResourceReference(Border.BackgroundProperty, "DockBackgroundBrush");
+                }
+            } catch {
+                 // Final fallback - dark transparent
+                 GlassBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(161, 0, 0, 0));
+            }
+
+            // Apply Background Image
+            if (isCustomImage)
             {
                 try
                 {
@@ -95,29 +256,30 @@ namespace DockShelf
                 if (_config.MatrixRows > 0) factory.SetValue(System.Windows.Controls.Primitives.UniformGrid.RowsProperty, _config.MatrixRows);
 
                 DockItemsControl.ItemsPanel = new System.Windows.Controls.ItemsPanelTemplate(factory);
-                OrientationButton.Visibility = Visibility.Collapsed; 
+                HamburgerButton.Visibility = Visibility.Collapsed;
+                MenuPanel.Visibility = Visibility.Visible;
+                MenuOrientationButton.Visibility = Visibility.Collapsed;
                 ControlsStackPanel.MaxWidth = double.PositiveInfinity;
             }
             else
             {
-                OrientationButton.Visibility = Visibility.Visible;
                 DockItemsControl.ItemsPanel = _config.IsVertical ? (System.Windows.Controls.ItemsPanelTemplate)FindResource("VerticalPanel") : (System.Windows.Controls.ItemsPanelTemplate)FindResource("HorizontalPanel");
                 
                 if (_config.IsVertical)
                 {
-                    OrientationButton.Content = "☰"; // Hamburger
+                    HamburgerButton.Visibility = Visibility.Visible;
                     MenuPanel.Visibility = Visibility.Collapsed; // Initial state: closed
                     ControlsStackPanel.MaxWidth = 40;
-                    OrientationButton.ToolTip = "Open Menu";
-                    HorizontalModeButton.Visibility = Visibility.Visible;
+                    MenuOrientationButton.Content = "↔";
+                    MenuOrientationButton.Visibility = Visibility.Visible;
                 }
                 else
                 {
-                    OrientationButton.Content = "↕";
+                    HamburgerButton.Visibility = Visibility.Collapsed;
                     MenuPanel.Visibility = Visibility.Visible;
                     ControlsStackPanel.MaxWidth = double.PositiveInfinity;
-                    OrientationButton.ToolTip = "Toggle Orientation";
-                    HorizontalModeButton.Visibility = Visibility.Collapsed;
+                    MenuOrientationButton.Content = "↕";
+                    MenuOrientationButton.Visibility = Visibility.Visible;
                 }
             }
         }
@@ -143,21 +305,19 @@ namespace DockShelf
             _app.SaveConfigs();
         }
 
-        private void OrientationButton_Click(object sender, RoutedEventArgs e)
+        private void HamburgerButton_Click(object sender, RoutedEventArgs e)
         {
-            // If the inner horizontal button was clicked, or if we're not vertical, toggle orientation
-            if (sender == HorizontalModeButton || !_config.IsVertical)
-            {
-                _config.IsVertical = !_config.IsVertical;
-                ApplySettingsState();
-            }
-            else
-            {
-                // We are in vertical mode and the main hamburger button was clicked: Toggle menu
-                bool isCurrentlyOpen = MenuPanel.Visibility == Visibility.Visible;
-                MenuPanel.Visibility = isCurrentlyOpen ? Visibility.Collapsed : Visibility.Visible;
-                ControlsStackPanel.MaxWidth = isCurrentlyOpen ? 40 : double.PositiveInfinity;
-            }
+            // We are in vertical mode and the main hamburger button was clicked: Toggle menu
+            bool isCurrentlyOpen = MenuPanel.Visibility == Visibility.Visible;
+            MenuPanel.Visibility = isCurrentlyOpen ? Visibility.Collapsed : Visibility.Visible;
+            ControlsStackPanel.MaxWidth = isCurrentlyOpen ? 40 : double.PositiveInfinity;
+        }
+
+        private void MenuOrientationButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Toggle orientation
+            _config.IsVertical = !_config.IsVertical;
+            ApplySettingsState();
             _app.SaveConfigs();
         }
 
@@ -210,11 +370,12 @@ namespace DockShelf
             // Require at least 5px drag before initiating
             if (Math.Abs(diff.X) < 5 && Math.Abs(diff.Y) < 5) return;
 
+            var wrapper = new DragDataWrapper { SourceWindow = this, Item = item };
             _draggedItem = item;
             _isDragging = true;
             try
             {
-                DragDrop.DoDragDrop(el, item, System.Windows.DragDropEffects.Move);
+                DragDrop.DoDragDrop(el, wrapper, System.Windows.DragDropEffects.Move);
             }
             finally
             {
@@ -236,18 +397,42 @@ namespace DockShelf
 
         public void EditItem_Drop(object sender, System.Windows.DragEventArgs e)
         {
-            if (_draggedItem == null) return;
+            var wrapper = e.Data.GetData(typeof(DragDataWrapper)) as DragDataWrapper;
+            if (wrapper == null || wrapper.Item == null) return;
+            
+            var droppedItem = wrapper.Item;
+            var sourceWindow = wrapper.SourceWindow;
+
             if (sender is FrameworkElement el && el.DataContext is DockItem target &&
-                !ReferenceEquals(_draggedItem, target))
+                !ReferenceEquals(droppedItem, target))
             {
-                int srcIdx = Items.IndexOf(_draggedItem);
                 int dstIdx = Items.IndexOf(target);
-                if (srcIdx >= 0 && dstIdx >= 0)
+                if (dstIdx >= 0)
                 {
-                    Items.Move(srcIdx, dstIdx);
-                    _config.Items.Clear();
-                    foreach (var i in Items) _config.Items.Add(i);
-                    _app.SaveConfigs();
+                    if (sourceWindow != this)
+                    {
+                        // Cross-window drag
+                        sourceWindow.Items.Remove(droppedItem);
+                        sourceWindow._config.Items.Remove(droppedItem);
+                        if (sourceWindow.Items.Count == 0) sourceWindow.DragZone.Visibility = Visibility.Visible;
+
+                        Items.Insert(dstIdx, droppedItem);
+                        _config.Items.Insert(dstIdx, droppedItem);
+                        DragZone.Visibility = Visibility.Collapsed;
+                        _app.SaveConfigs();
+                    }
+                    else
+                    {
+                        // Internal move
+                        int srcIdx = Items.IndexOf(droppedItem);
+                        if (srcIdx >= 0)
+                        {
+                            Items.Move(srcIdx, dstIdx);
+                            _config.Items.Clear();
+                            foreach (var i in Items) _config.Items.Add(i);
+                            _app.SaveConfigs();
+                        }
+                    }
                 }
             }
             _draggedItem = null;
@@ -295,7 +480,7 @@ namespace DockShelf
 
         private void Window_DragEnter(object sender, System.Windows.DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop) || e.Data.GetDataPresent(System.Windows.DataFormats.Text))
+            if (e.Data.GetDataPresent(typeof(DragDataWrapper)) || e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop) || e.Data.GetDataPresent(System.Windows.DataFormats.Text))
             {
                 e.Effects = System.Windows.DragDropEffects.Copy;
             }
@@ -313,8 +498,21 @@ namespace DockShelf
             // Capture drop position BEFORE adding item (for smart matrix logic)
             var dropPos = e.GetPosition(DockItemsControl);
 
+            // Handle Cross-Window dropping on empty space
+            var wrapper = e.Data.GetData(typeof(DragDataWrapper)) as DragDataWrapper;
+            if (wrapper != null && wrapper.Item != null && wrapper.SourceWindow != this)
+            {
+                var droppedItem = wrapper.Item;
+                wrapper.SourceWindow.Items.Remove(droppedItem);
+                wrapper.SourceWindow._config.Items.Remove(droppedItem);
+                if (wrapper.SourceWindow.Items.Count == 0) wrapper.SourceWindow.DragZone.Visibility = Visibility.Visible;
+
+                Items.Add(droppedItem);
+                _config.Items.Add(droppedItem);
+                addedNew = true;
+            }
             // Handle Text or URLs
-            if (e.Data.GetDataPresent(System.Windows.DataFormats.Text))
+            else if (e.Data.GetDataPresent(System.Windows.DataFormats.Text))
             {
                 string text = (string)e.Data.GetData(System.Windows.DataFormats.Text);
                 if (!string.IsNullOrWhiteSpace(text))
@@ -340,11 +538,12 @@ namespace DockShelf
                     if (_config.Items.Exists(i => string.Equals(i.FilePath, file, StringComparison.OrdinalIgnoreCase)))
                         continue;
 
+                    bool isDir = Directory.Exists(file);
                     var item = new DockItem
                     {
                         Name = Path.GetFileNameWithoutExtension(file),
                         FilePath = file,
-                        Type = file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? DockItemType.Executable : DockItemType.File
+                        Type = isDir ? DockItemType.Folder : (file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? DockItemType.Executable : DockItemType.File)
                     };
 
                     item.IconImage = GetIconForFile(file);
@@ -421,11 +620,12 @@ namespace DockShelf
 
         private void DockItem_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            _hoverTimer.Stop(); // Ensure popup doesn't open if clicked
             if (sender is FrameworkElement element && element.DataContext is DockItem item)
             {
                 try
                 {
-                    if (item.Type == DockItemType.Executable || item.Type == DockItemType.File)
+                    if (item.Type == DockItemType.Executable || item.Type == DockItemType.File || item.Type == DockItemType.Folder)
                     {
                         Process.Start(new ProcessStartInfo(item.FilePath) { UseShellExecute = true });
                     }
@@ -441,6 +641,79 @@ namespace DockShelf
                     System.Windows.MessageBox.Show($"Failed to open item: {ex.Message}", "Error");
                 }
             }
+        }
+
+        private void DockItem_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            if (sender is FrameworkElement el && el.DataContext is DockItem item && item.Type == DockItemType.Folder)
+            {
+                _hoveredFolderItem = item;
+                _hoverTimer.Start();
+            }
+        }
+
+        private void DockItem_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            _hoverTimer.Stop();
+            _hoveredFolderItem = null;
+        }
+
+        private void HoverTimer_Tick(object sender, EventArgs e)
+        {
+            _hoverTimer.Stop();
+            if (_hoveredFolderItem != null && _hoveredFolderItem.Type == DockItemType.Folder)
+            {
+                ShowFolderPreview(_hoveredFolderItem);
+            }
+        }
+
+        private void ShowFolderPreview(DockItem folderItem)
+        {
+            FolderPreviewList.Children.Clear();
+            if (!Directory.Exists(folderItem.FilePath)) return;
+
+            try
+            {
+                var header = new TextBlock { Text = folderItem.Name, FontWeight = FontWeights.Bold, Foreground = System.Windows.Media.Brushes.White, Margin = new Thickness(5, 5, 5, 10), TextTrimming = TextTrimming.CharacterEllipsis };
+                FolderPreviewList.Children.Add(header);
+
+                var entries = Directory.GetFileSystemEntries(folderItem.FilePath);
+                int count = 0;
+                foreach (var entry in entries)
+                {
+                    if (count >= 50) 
+                    {
+                        FolderPreviewList.Children.Add(new TextBlock { Text = "... Daha fazla", Foreground = System.Windows.Media.Brushes.Gray, FontStyle = FontStyles.Italic, Margin = new Thickness(5) });
+                        break;
+                    }
+
+                    string name = Path.GetFileName(entry);
+                    bool isDir = Directory.Exists(entry);
+                    
+                    var btn = new System.Windows.Controls.Button
+                    {
+                        Content = (isDir ? "📁 " : "📄 ") + name,
+                        Background = System.Windows.Media.Brushes.Transparent,
+                        Foreground = System.Windows.Media.Brushes.White,
+                        BorderThickness = new Thickness(0),
+                        HorizontalContentAlignment = System.Windows.HorizontalAlignment.Left,
+                        Padding = new Thickness(5),
+                        Cursor = System.Windows.Input.Cursors.Hand,
+                        ToolTip = name
+                    };
+                    btn.Click += (s, ev) => 
+                    {
+                        try { Process.Start(new ProcessStartInfo(entry) { UseShellExecute = true }); } catch {}
+                        FolderPreviewPopup.IsOpen = false;
+                    };
+                    FolderPreviewList.Children.Add(btn);
+
+                    count++;
+                }
+
+                FolderPreviewPopup.IsOpen = true;
+            }
+            catch {}
         }
 
         // Add Delete Option using Right Click
@@ -462,24 +735,25 @@ namespace DockShelf
 
         private ImageSource GetIconForFile(string filePath)
         {
-            try
+            // Create thumbnail for images
+            string ext = Path.GetExtension(filePath)?.ToLower();
+            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".gif")
             {
-                using (var icon = System.Drawing.Icon.ExtractAssociatedIcon(filePath))
+                try
                 {
-                    if (icon != null)
-                    {
-                        return System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(
-                            icon.Handle,
-                            Int32Rect.Empty,
-                            BitmapSizeOptions.FromEmptyOptions());
-                    }
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.DecodePixelWidth = 128; // high-quality thumbnail constraint
+                    bmp.UriSource = new Uri(filePath);
+                    bmp.EndInit();
+                    bmp.Freeze();
+                    return bmp;
                 }
+                catch {} // fallback if invalid image
             }
-            catch
-            {
-                // Fallback icon if extraction fails
-            }
-            return null;
+
+            return IconExtractor.GetStandardIcon(filePath);
         }
         private void AboutButton_Click(object sender, RoutedEventArgs e)
 {
@@ -487,5 +761,35 @@ namespace DockShelf
     aboutWin.Owner = this; // Ana pencerenin üzerinde düzgün görünmesi için
     aboutWin.ShowDialog(); // Kullanıcı pencereyi kapatana kadar ana pencereyi bekletir
 }
+    }
+
+    public static class IconExtractor
+    {
+        public static ImageSource GetStandardIcon(string path)
+        {
+            try 
+            {
+                using (var icon = System.Drawing.Icon.ExtractAssociatedIcon(path))
+                {
+                    if (icon != null)
+                    {
+                        var source = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(
+                            icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                        source.Freeze();
+                        return source;
+                    }
+                }
+            } 
+            catch {}
+            
+            // For folders, ExtractAssociatedIcon might fail, so fallback
+            return null;
+        }
+    }
+
+    public class DragDataWrapper
+    {
+        public MainWindow SourceWindow { get; set; }
+        public DockItem Item { get; set; }
     }
 }

@@ -1,0 +1,38 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ImageBrush x:Key="DockBackgroundBrush" x:Shared="False" ImageSource="/Assets/SteampunkGears.png" Stretch="UniformToFill" Opacity="0.9">
+        <ImageBrush.RelativeTransform>
+            <RotateTransform CenterX="0.5" CenterY="0.5" Angle="0"/>
+        </ImageBrush.RelativeTransform>
+    </ImageBrush>
+    
+    <SolidColorBrush x:Key="DockBorderBrush" Color="#B87333"/> <!-- Copper/Brass color -->
+    <CornerRadius x:Key="DockCornerRadius">6</CornerRadius>
+    
+    <Style x:Key="DockBorderStyle" TargetType="Border">
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="15" ShadowDepth="5" Color="#000000" Opacity="0.8"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <Storyboard x:Key="ThemeAnimation" RepeatBehavior="Forever">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.Background).(Brush.RelativeTransform).(RotateTransform.Angle)"
+                            From="0" To="360" Duration="0:0:15" />
+    </Storyboard>
+    
+    <!-- Item Styles -->
+    <SolidColorBrush x:Key="ItemNormalBrush" Color="#44221100"/>
+    <SolidColorBrush x:Key="ItemHoverBrush" Color="#88B87333"/>
+    <CornerRadius x:Key="ItemCornerRadius">6</CornerRadius>
+    <Thickness x:Key="ItemMargin">4</Thickness>
+
+    <!-- Label Specs -->
+    <SolidColorBrush x:Key="LabelForegroundBrush" Color="#FFFFD700"/> <!-- Gold text -->
+    
+    <!-- Window Button Spec -->
+    <SolidColorBrush x:Key="ButtonHoverBackgroundBrush" Color="#55B87333"/>
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#AAB87333"/>
+    <SolidColorBrush x:Key="ButtonHoverForegroundBrush" Color="#FFFFD700"/>
+</ResourceDictionary>

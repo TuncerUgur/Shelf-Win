@@ -1,0 +1,31 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- Background: AI Generated Nebula Image -->
+    <ImageBrush x:Key="DockBackgroundBrush" ImageSource="/Assets/CosmicNebula.png" Stretch="UniformToFill" Opacity="0.95"/>
+    
+    <SolidColorBrush x:Key="DockBorderBrush" Color="#EE00FFFF"/> <!-- Cyan edge -->
+    <CornerRadius x:Key="DockCornerRadius">20</CornerRadius>
+    
+    <Style x:Key="DockBorderStyle" TargetType="Border">
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="30" ShadowDepth="0" Color="#00FFFF" Opacity="0.6"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Item Styles -->
+    <SolidColorBrush x:Key="ItemNormalBrush" Color="#33000000"/>
+    <SolidColorBrush x:Key="ItemHoverBrush" Color="#6600FFFF"/> <!-- Glowing cyan selection -->
+    <CornerRadius x:Key="ItemCornerRadius">10</CornerRadius>
+    <Thickness x:Key="ItemMargin">4</Thickness>
+
+    <!-- Label Specs -->
+    <SolidColorBrush x:Key="LabelForegroundBrush" Color="#EECCFFFF"/>
+    
+    <!-- Window Button Spec -->
+    <SolidColorBrush x:Key="ButtonHoverBackgroundBrush" Color="#5500FFFF"/>
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#AA00FFFF"/>
+    <SolidColorBrush x:Key="ButtonHoverForegroundBrush" Color="#FFFFFFFF"/>
+</ResourceDictionary>

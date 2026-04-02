@@ -10,7 +10,8 @@ namespace DockShelf.Models
         Executable,
         File,
         Link,
-        TextSnippet
+        TextSnippet,
+        Folder
     }
 
     public class DockItem : INotifyPropertyChanged

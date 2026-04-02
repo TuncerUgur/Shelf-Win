@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+	  <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+	  <Platforms>AnyCPU;x64</Platforms>
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -11,9 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Assets\Icon.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Resource Include="Assets\*.png" />
     <Content Include="Assets\Icon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

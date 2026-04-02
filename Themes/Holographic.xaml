@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- Holographic background gradient -->
+    <LinearGradientBrush x:Key="DockBackgroundBrush" x:Shared="False" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#9900FFFF" Offset="0"/> <!-- Cyan -->
+        <GradientStop Color="#99FF00FF" Offset="0.5"/> <!-- Magenta -->
+        <GradientStop Color="#9900FF88" Offset="1"/> <!-- Neon Green -->
+    </LinearGradientBrush>
+    
+    <SolidColorBrush x:Key="DockBorderBrush" Color="#EEFFFFFF"/>
+    <CornerRadius x:Key="DockCornerRadius">18</CornerRadius>
+    
+    <Style x:Key="DockBorderStyle" TargetType="Border">
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="20" ShadowDepth="0" Color="#FFFFFF" Opacity="0.4"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <Storyboard x:Key="ThemeAnimation" RepeatBehavior="Forever" AutoReverse="True">
+        <PointAnimation Storyboard.TargetProperty="(UIElement.Background).(LinearGradientBrush.StartPoint)"
+                        From="0,0" To="1,0" Duration="0:0:5" />
+        <PointAnimation Storyboard.TargetProperty="(UIElement.Background).(LinearGradientBrush.EndPoint)"
+                        From="1,1" To="0,1" Duration="0:0:5" />
+    </Storyboard>
+
+    <!-- Item Styles -->
+    <SolidColorBrush x:Key="ItemNormalBrush" Color="Transparent"/>
+    <SolidColorBrush x:Key="ItemHoverBrush" Color="#66FFFFFF"/>
+    <CornerRadius x:Key="ItemCornerRadius">12</CornerRadius>
+    <Thickness x:Key="ItemMargin">5</Thickness>
+
+    <!-- Label Specs -->
+    <SolidColorBrush x:Key="LabelForegroundBrush" Color="White"/>
+    
+    <!-- Window Button Spec -->
+    <SolidColorBrush x:Key="ButtonHoverBackgroundBrush" Color="#44FFFFFF"/>
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#AAFFFFFF"/>
+    <SolidColorBrush x:Key="ButtonHoverForegroundBrush" Color="#FFFFFFFF"/>
+</ResourceDictionary>
